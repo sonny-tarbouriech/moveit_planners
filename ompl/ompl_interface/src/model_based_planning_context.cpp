@@ -51,6 +51,9 @@
 #include <ompl/base/spaces/SE3StateSpace.h>
 #include <ompl/datastructures/PDF.h>
 
+//STa
+#include <moveit/ompl_interface/detail/safe_state_validity_checker.h>
+
 ompl_interface::ModelBasedPlanningContext::ModelBasedPlanningContext(const std::string &name, const ModelBasedPlanningContextSpecification &spec) :
   planning_interface::PlanningContext(name, spec.state_space_->getJointModelGroup()->getName()),
   spec_(spec),
@@ -182,7 +185,10 @@ void ompl_interface::ModelBasedPlanningContext::configure()
   ompl::base::ScopedState<> ompl_start_state(spec_.state_space_);
   spec_.state_space_->copyToOMPLState(ompl_start_state.get(), getCompleteInitialRobotState());
   ompl_simple_setup_->setStartState(ompl_start_state);
-  ompl_simple_setup_->setStateValidityChecker(ob::StateValidityCheckerPtr(new StateValidityChecker(this)));
+
+  //STa
+  //ompl_simple_setup_->setStateValidityChecker(ob::StateValidityCheckerPtr(new StateValidityChecker(this)));
+  ompl_simple_setup_->setStateValidityChecker(ob::StateValidityCheckerPtr(new SafeStateValidityChecker(this)));
 
   if (path_constraints_ && spec_.constraints_library_)
   {

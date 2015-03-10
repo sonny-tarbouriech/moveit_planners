@@ -19,6 +19,9 @@ add_library(${MOVEIT_LIB_NAME}
   src/detail/constrained_valid_state_sampler.cpp
   src/detail/constrained_goal_sampler.cpp
   src/detail/ompl_console.cpp
+
+  # STa
+  src/detail/safe_state_validity_checker.cpp
 )
 
 find_package(OpenMP)
