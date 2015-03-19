@@ -58,6 +58,8 @@
 //STa
 #include <ompl/geometric/planners/rrt/SafeRRTstar.h>
 #include <ompl/geometric/planners/prm/SafePRM.h>
+#include <ompl/geometric/planners/cforest/CForest.h>
+#include <ompl/geometric/planners/cforest/SafeCForest.h>
 
 #include <moveit/ompl_interface/parameterization/joint_space/joint_model_state_space_factory.h>
 #include <moveit/ompl_interface/parameterization/work_space/pose_model_state_space_factory.h>
@@ -123,6 +125,9 @@ using namespace ompl_interface;
 template<typename T>
 static ompl::base::PlannerPtr allocatePlanner(const ob::SpaceInformationPtr &si, const std::string &new_name, const ModelBasedPlanningContextSpecification &spec)
 {
+	std::cout<< "planning_context_manager will call  planner->setup() \n";
+
+
   ompl::base::PlannerPtr planner(new T(si));
   if (!new_name.empty())
     planner->setName(new_name);
@@ -162,6 +167,9 @@ void ompl_interface::PlanningContextManager::registerDefaultPlanners()
   //STa
   registerPlannerAllocator("geometric::SafeRRTstar", boost::bind(&allocatePlanner<og::SafeRRTstar>, _1, _2, _3));
   registerPlannerAllocator("geometric::SafePRM", boost::bind(&allocatePlanner<og::SafePRM>, _1, _2, _3));
+  registerPlannerAllocator("geometric::CForest", boost::bind(&allocatePlanner<og::CForest>, _1, _2, _3));
+  registerPlannerAllocator("geometric::SafeCForest", boost::bind(&allocatePlanner<og::SafeCForest>, _1, _2, _3));
+
 }
 
 void ompl_interface::PlanningContextManager::registerDefaultStateSpaces()
