@@ -209,9 +209,6 @@ void ompl_interface::ModelBasedPlanningContext::configure()
 
 void ompl_interface::ModelBasedPlanningContext::useConfig()
 {
-	//STa temp
-	std::cout << "Enter ompl_interface::ModelBasedPlanningContext::useConfig() \n";
-
 	const std::map<std::string, std::string> &config = spec_.config_;
 	if (config.empty())
 		return;
@@ -241,7 +238,6 @@ void ompl_interface::ModelBasedPlanningContext::useConfig()
 		cfg.erase(it);
 		ompl_simple_setup_->setPlannerAllocator(boost::bind(spec_.planner_selector_(type), _1,
 				name_ != getGroupName() ? name_ : "", spec_));
-		std::cout << "ompl_interface::ModelBasedPlanningContext::useConfig()  \n";
 
 		logInform("Planner configuration '%s' will use planner '%s'. Additional configuration parameters will be set when the planner is constructed.",
 				name_.c_str(), type.c_str());

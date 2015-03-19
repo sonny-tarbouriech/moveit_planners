@@ -125,9 +125,6 @@ using namespace ompl_interface;
 template<typename T>
 static ompl::base::PlannerPtr allocatePlanner(const ob::SpaceInformationPtr &si, const std::string &new_name, const ModelBasedPlanningContextSpecification &spec)
 {
-	std::cout<< "planning_context_manager will call  planner->setup() \n";
-
-
   ompl::base::PlannerPtr planner(new T(si));
   if (!new_name.empty())
     planner->setName(new_name);
