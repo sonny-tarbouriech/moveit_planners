@@ -56,14 +56,17 @@ ompl_interface::SafeStateValidityChecker::SafeStateValidityChecker(const ModelBa
 {
 	//STa
 	safe_collision_robot_fcl_unpadded_ = new collision_detection::SafeCollisionRobotFCL(*(static_cast<const collision_detection::CollisionRobotFCL*> (planning_context_->getPlanningScene()->getCollisionRobotUnpadded().get())));
-	safe_collision_robot_fcl_padded_ = new collision_detection::SafeCollisionRobotFCL(*(static_cast<const collision_detection::CollisionRobotFCL*> (planning_context_->getPlanningScene()->getCollisionRobot().get())));
+	safe_collision_robot_fcl_padded_ = new collision_detection::SafeCollisionRobotFCL(planning_context_->getRobotModel(), 0.02, 1);
 
 	safe_collision_world_fcl_ = static_cast<const collision_detection::SafeCollisionWorldFCL*> (planning_context_->getPlanningScene()->getCollisionWorld().get());
 
 	collision_request_with_distance_.distance = true;
 
+	collision_request_with_contacts_.contacts = true;
+
 	collision_request_simple_.group_name = planning_context_->getGroupName();
 	collision_request_with_distance_.group_name = planning_context_->getGroupName();
+	collision_request_with_contacts_.group_name = planning_context_->getGroupName();
 
 	fcl_collision_obj_ = safe_collision_world_fcl_->getCollisionObjects();
 
@@ -158,7 +161,7 @@ ompl_interface::SafeStateValidityChecker::SafeStateValidityChecker(const ModelBa
 	//lower_shoulder radius,upper elbow length, upper elbow visual length, lower_elbow radius (twice)
 	L_max_[0] = std::sqrt(std::pow(0.06+0.107+0.273+0.06,2)+std::pow(0.06,2));
 	L_max_[1] = 0.37429;
-	L_max_[2] = 0.2331; // + hand range added
+	L_max_[2] = 0.2331 + 0.1; // + hand range added + gripper with fingers
 
 	angle_max_[0] = 0;
 	angle_max_[1] = M_PI/2;
@@ -231,7 +234,20 @@ bool ompl_interface::SafeStateValidityChecker::isValidSelf(const ompl::base::Sta
 
 	// check self collision avoidance
 	collision_detection::CollisionResult res;
-	planning_context_->getPlanningScene()->checkSelfCollision(collision_request_simple_, res, *kstate);
+	//STa
+//	planning_context_->getPlanningScene()->checkSelfCollision(collision_request_simple_, res, *kstate);
+
+
+
+	safe_collision_robot_fcl_padded_->checkSelfCollision(collision_request_simple_, res, *kstate, planning_context_->getPlanningScene()->getAllowedCollisionMatrix());
+
+//	for(collision_detection::CollisionResult::ContactMap::const_iterator it = res.contacts.begin();
+//	    it != res.contacts.end();
+//	    ++it)
+//	{
+//	  ROS_INFO("Contact between: %s and %s", it->first.first.c_str(), it->first.second.c_str());
+//	}
+
 	if (res.collision == false)
 	{
 		const_cast<ob::State*>(state)->as<ModelBasedStateSpace::StateType>()->markValid();
@@ -872,7 +888,7 @@ double ompl_interface::SafeStateValidityChecker::computeLinkApproxMinObstacleDis
 
 double ompl_interface::SafeStateValidityChecker::computeLinkExactMinObstacleDist(const robot_state::RobotState *kstate, int link_index, int object_index) const
 {
-	return safe_collision_world_fcl_->distanceRobot(safe_collision_robot_fcl_padded_, *kstate,  &planning_context_->getPlanningScene()->getAllowedCollisionMatrix(), safety_links_name_cc_[link_index], object_index);
+	return safe_collision_world_fcl_->distanceRobot(safe_collision_robot_fcl_unpadded_, *kstate,  &planning_context_->getPlanningScene()->getAllowedCollisionMatrix(), safety_links_name_cc_[link_index], object_index);
 }
 
 double ompl_interface::SafeStateValidityChecker::computeLinkMinObstacleDist(const ompl::base::State *state, int link_index, int object_index, bool fast_dist)
@@ -1090,41 +1106,41 @@ double ompl_interface::SafeStateValidityChecker::computeRobotExactMinObstacleDis
 //	return planning_context_->getPlanningScene()->getCollisionWorld()->distanceRobot(*(planning_context_->getPlanningScene()->getCollisionRobot()), *kstate, planning_context_->getPlanningScene()->getAllowedCollisionMatrix(), planning_context_->getGroupName() );
 //	return planning_context_->getPlanningScene()->getCollisionWorld()->distanceRobot(*(planning_context_->getPlanningScene()->getCollisionRobot()), *kstate, planning_context_->getPlanningScene()->getAllowedCollisionMatrix());
 
-	return safe_collision_world_fcl_->distanceRobot(*safe_collision_robot_fcl_padded_, *kstate,  planning_context_->getPlanningScene()->getAllowedCollisionMatrix(), planning_context_->getGroupName());
+	return safe_collision_world_fcl_->distanceRobot(*safe_collision_robot_fcl_unpadded_, *kstate,  planning_context_->getPlanningScene()->getAllowedCollisionMatrix(), planning_context_->getGroupName());
 
 }
 
 
 double ompl_interface::SafeStateValidityChecker::manipulability(const ompl::base::State *state) const
 {
-	robot_state::RobotState *kstate = tsss_.getStateStorage();
-
-	planning_context_->getOMPLStateSpace()->copyToRobotState(*kstate, state);
-
-	double min_dist = std::numeric_limits<double>::infinity();
-	double temp_dist;
-
-	for(size_t i=0; i < hypersphere_.size(); ++i)
-	{
-		temp_dist = computeMinDistFromSphere(kstate, hypersphere_[i]);
-		if (temp_dist < min_dist)
-			min_dist = temp_dist;
-	}
-	return min_dist;
-
 //	robot_state::RobotState *kstate = tsss_.getStateStorage();
+//
 //	planning_context_->getOMPLStateSpace()->copyToRobotState(*kstate, state);
 //
-//	Eigen::MatrixXd jacobian = kstate->getJacobian(planning_context_->getPlanningScene()->getRobotModel()->getJointModelGroup(planning_context_->getGroupName()));
+//	double min_dist = std::numeric_limits<double>::infinity();
+//	double temp_dist;
 //
-//	//Method 1
-//	Eigen::MatrixXd product = jacobian*jacobian.transpose();
-//	double mom1 = std::sqrt(product.determinant());
-//
-//	//Method 2
-////	double mom2 = jacobian.jacobiSvd(0).singularValues().prod();
-//
-//	return mom1;
+//	for(size_t i=0; i < hypersphere_.size(); ++i)
+//	{
+//		temp_dist = computeMinDistFromSphere(kstate, hypersphere_[i]);
+//		if (temp_dist < min_dist)
+//			min_dist = temp_dist;
+//	}
+//	return min_dist;
+
+	robot_state::RobotState *kstate = tsss_.getStateStorage();
+	planning_context_->getOMPLStateSpace()->copyToRobotState(*kstate, state);
+
+	Eigen::MatrixXd jacobian = kstate->getJacobian(planning_context_->getPlanningScene()->getRobotModel()->getJointModelGroup(planning_context_->getGroupName()));
+
+	//Method 1
+	Eigen::MatrixXd product = jacobian*jacobian.transpose();
+	double mom1 = std::sqrt(product.determinant());
+
+	//Method 2
+//	double mom2 = jacobian.jacobiSvd(0).singularValues().prod();
+
+	return mom1;
 }
 
 double ompl_interface::SafeStateValidityChecker::manipulability(const ompl::base::State* s1, const ompl::base::State* s2)

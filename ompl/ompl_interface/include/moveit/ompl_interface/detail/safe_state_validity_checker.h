@@ -94,6 +94,7 @@ protected:
   TSStateStorage						tsss_;
   collision_detection::CollisionRequest collision_request_simple_;
   collision_detection::CollisionRequest collision_request_with_distance_;
+  collision_detection::CollisionRequest collision_request_with_contacts_;
 
   std::vector<fcl::CollisionObject*> fcl_collision_obj_;
   std::vector<const moveit::core::JointModel*> active_joints_;
