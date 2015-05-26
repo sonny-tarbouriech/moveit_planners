@@ -54,6 +54,9 @@
 //STa
 #include <moveit/ompl_interface/detail/safe_state_validity_checker.h>
 
+//STa temp
+#include <fstream>
+
 ompl_interface::ModelBasedPlanningContext::ModelBasedPlanningContext(const std::string &name, const ModelBasedPlanningContextSpecification &spec) :
 planning_interface::PlanningContext(name, spec.state_space_->getJointModelGroup()->getName()),
 spec_(spec),
@@ -554,7 +557,10 @@ bool ompl_interface::ModelBasedPlanningContext::solve(double timeout, unsigned i
 
 			ob::PlannerTerminationCondition ptc = ob::timedPlannerTerminationCondition(timeout - ompl::time::seconds(ompl::time::now() - start));
 			registerTerminationCondition(ptc);
-			result = ompl_parallel_plan_.solve(ptc, 1, count, true) == ompl::base::PlannerStatus::EXACT_SOLUTION;
+			//STa
+//			result = ompl_parallel_plan_.solve(ptc, 1, count, true) == ompl::base::PlannerStatus::EXACT_SOLUTION;
+			result = ompl_parallel_plan_.solve(ptc, 1, count, false) == ompl::base::PlannerStatus::EXACT_SOLUTION;
+
 			last_plan_time_ = ompl::time::seconds(ompl::time::now() - start);
 			unregisterTerminationCondition();
 		}
@@ -592,6 +598,15 @@ bool ompl_interface::ModelBasedPlanningContext::solve(double timeout, unsigned i
 			last_plan_time_ = ompl::time::seconds(ompl::time::now() - start);
 			unregisterTerminationCondition();
 		}
+	}
+
+	//STa test
+	if (ompl_simple_setup_->getProblemDefinition()->hasSolution())
+	{
+		std::string homepath = getenv("HOME");
+		std::ofstream output_file((homepath + "/mbpc.txt").c_str(), std::ios::out | std::ios::app);
+		output_file << ompl_simple_setup_->getProblemDefinition()->getSolutions()[0].safetyCost_ << "\n";
+		output_file.close();
 	}
 
 	postSolve();

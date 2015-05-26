@@ -55,7 +55,7 @@ public:
   virtual double computeLinkMinSelfDist(const ompl::base::State *state, int link_index);
 
 
-  virtual double computeRobotMinObstacleDistIndividualLinks(const ompl::base::State *state, bool fast_dist) const;
+  virtual double computeRobotMinObstacleDistIndividualLinks(const ompl::base::State *state, bool fast_dist, double& object_danger_factor) const;
   virtual double computeRobotExactMinObstacleDist(const ompl::base::State *state) const;
 
   virtual std::vector<double> getJointValues(const ompl::base::State *state) const;
@@ -64,22 +64,32 @@ public:
   virtual double manipulability(const ompl::base::State *state) const;
   virtual double manipulability(const ompl::base::State* s1, const ompl::base::State* s2);
 
+  virtual double humanAwareness(const ompl::base::State *state) const;
+
+  virtual void printStatePositions(const ompl::base::State *state, std::ostream &out = std::cout) const;
+
 
 
 
 protected:
+
+  std::vector<double> getCollisionObjectsFactors();
 
   bool isValidApprox(const ompl::base::State *state) const;
 
   double computeMinDistFromSphere(robot_state::RobotState *kstate, Hypersphere sphere) const;
   double computeMinDistFromSphere(robot_state::RobotState *ks1, robot_state::RobotState *ks2, Hypersphere sphere) const;
 
-  double computeRobotMinObstacleDistIndividualLinks(const robot_state::RobotState *kstate, bool fast_dist) const;
+  double computeRobotMinObstacleDistIndividualLinks(const robot_state::RobotState *kstate, bool fast_dist, double& object_danger_factor) const;
   double computeRobotExactMinObstacleDist(const robot_state::RobotState *kstate) const;
 
   double computeLinkMinObstacleDist(const robot_state::RobotState *kstate, int link_index, bool fast_dist) const;
   double computeLinkApproxMinObstacleDist(const robot_state::RobotState *kstate, int link_index, int object_index) const;
   double computeLinkExactMinObstacleDist(const robot_state::RobotState *kstate, int link_index, int object_index) const;
+
+  double computeLinkApproxMinBoxDist(const robot_state::RobotState *kstate, int link_index, int object_index) const;
+  double computeLinkApproxMinSphereDist(const robot_state::RobotState *kstate, int link_index, int object_index) const;
+  double computeLinkApproxMinCylinderDist(const robot_state::RobotState *kstate, int link_index, int object_index) const;
 
 
   double computeTravelDist(const robot_state::RobotState *ks1, const robot_state::RobotState *ks2, size_t link_index, std::vector<double> joints_diff, std::vector<double> joints_modulation) const;
@@ -88,6 +98,8 @@ protected:
   double computeJointsDiff(const robot_state::RobotState *ks1, const robot_state::RobotState *ks2, size_t joint_index) const;
   std::vector<double> computeJointsModulation(const robot_state::RobotState *ks1, const robot_state::RobotState *ks2) const;
   double computeJointsModulation(const robot_state::RobotState *ks1, const robot_state::RobotState *ks2, size_t link_index) const;
+
+
 
   const ModelBasedPlanningContext      *planning_context_;
   std::string                           group_name_;

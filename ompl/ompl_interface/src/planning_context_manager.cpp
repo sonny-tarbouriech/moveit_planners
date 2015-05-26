@@ -57,6 +57,8 @@
 
 //STa
 #include <ompl/geometric/planners/rrt/SafeRRTstar.h>
+#include <ompl/geometric/planners/rrt/SafeBiRRTstar.h>
+#include <ompl/geometric/planners/rrt/SafeBiTRRT.h>
 #include <ompl/geometric/planners/prm/SafePRM.h>
 #include <ompl/geometric/planners/cforest/CForest.h>
 #include <ompl/geometric/planners/cforest/SafeCForest.h>
@@ -166,6 +168,9 @@ void ompl_interface::PlanningContextManager::registerDefaultPlanners()
   registerPlannerAllocator("geometric::SafePRM", boost::bind(&allocatePlanner<og::SafePRM>, _1, _2, _3));
   registerPlannerAllocator("geometric::CForest", boost::bind(&allocatePlanner<og::CForest>, _1, _2, _3));
   registerPlannerAllocator("geometric::SafeCForest", boost::bind(&allocatePlanner<og::SafeCForest>, _1, _2, _3));
+  registerPlannerAllocator("geometric::SafeBiTRRT", boost::bind(&allocatePlanner<og::SafeBiTRRT>, _1, _2, _3));
+  registerPlannerAllocator("geometric::SafeBiRRTstar", boost::bind(&allocatePlanner<og::SafeBiRRTstar>, _1, _2, _3));
+
 
 }
 
