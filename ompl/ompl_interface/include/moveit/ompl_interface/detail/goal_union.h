@@ -55,6 +55,9 @@ public:
   /** @brief Sample a goal*/
   virtual void sampleGoal(ompl::base::State *st) const;
 
+  //STa
+  virtual void sampleGoal(ompl::base::State *st, unsigned int samplePosition) const;
+
   /** @brief Get the max sample count*/
   virtual unsigned int maxSampleCount() const;
 

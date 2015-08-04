@@ -384,6 +384,7 @@ bool ompl_interface::ModelBasedPlanningContext::setGoalConstraints(const std::ve
 	}
 
 	ob::GoalPtr goal = constructGoal();
+
 	ompl_simple_setup_->setGoal(goal);
 	if (goal)
 		return true;

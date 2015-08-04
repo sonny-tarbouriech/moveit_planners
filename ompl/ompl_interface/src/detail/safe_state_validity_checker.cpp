@@ -46,6 +46,9 @@
 //STa temp
 #include <fstream>
 
+static const double SAFETY_DISTANCE = 2;
+
+
 ompl_interface::SafeStateValidityChecker::SafeStateValidityChecker(const ModelBasedPlanningContext *pc)
 : ompl::base::SafeStateValidityChecker(pc->getOMPLSimpleSetup()->getSpaceInformation())
 , planning_context_(pc)
@@ -206,13 +209,71 @@ ompl_interface::SafeStateValidityChecker::SafeStateValidityChecker(const ModelBa
 
 	}
 
-	moveit::core::FixedTransformsMap transform = planning_context_->getPlanningScene()->getTransforms().getAllTransforms();
-	for (moveit::core::FixedTransformsMap::iterator it = transform.begin(); it != transform.end(); ++it)
+	std::vector<size_t> user_ids = getUserIDs();
+	std::vector<std::string> co_names = safe_collision_world_fcl_->getCollisionObjectNames();
+	for(size_t i=0; i < co_names.size(); ++i)
 	{
-		ROS_WARN_STREAM(it->first);
-	}
-	std::cout << "\n";
+		if (co_names[i].find("human_eye_gaze") != std::string::npos)
+		{
+			std::string delimiter = "_";
+			std::string s = co_names[i];
+			size_t pos = 0;
+			while ((pos = s.find(delimiter)) != std::string::npos) {
+				s.erase(0, pos + delimiter.length());
+			}
 
+			std::stringstream ss;
+			ss << s;
+			int user_id;
+			ss >> user_id;
+
+
+			if (std::find(user_ids.begin(), user_ids.end(), user_id)!=user_ids.end())
+			{
+				fcl::Quaternion3f fcl_q = fcl_collision_obj_[i]->getTransform().getQuatRotation();
+				fcl::Vec3f fcl_pos = fcl_collision_obj_[i]->getTransform().getTranslation();
+				Eigen::Quaterniond q(fcl_q.getW(), fcl_q.getX(), fcl_q.getY(), fcl_q.getZ());
+				Eigen::Vector3d pos(fcl_pos.data[0], fcl_pos.data[1], fcl_pos.data[2]);
+				Eigen::Vector3d scale(1,1,1);
+				Eigen::Affine3d aff;
+				aff.fromPositionOrientationScale(pos,q,scale);
+
+				human_eye_gaze_.push_back(aff);
+			}
+
+		}
+
+	}
+
+	if (human_eye_gaze_.size() > 0)
+		human_presence_ = true;
+	else
+		human_presence_ = false;
+
+//	moveit::core::FixedTransformsMap transform = planning_context_->getPlanningScene()->getTransforms().getAllTransforms();
+//	for (moveit::core::FixedTransformsMap::iterator it = transform.begin(); it != transform.end(); ++it)
+//	{
+//		if (it->first.find("human_eye_gaze") != std::string::npos)
+//		{
+//			std::string delimiter = "_";
+//			std::string s = it->first;
+//			size_t pos = 0;
+//			while ((pos = s.find(delimiter)) != std::string::npos) {
+//				s.erase(0, pos + delimiter.length());
+//			}
+//
+//			std::stringstream ss;
+//			ss << s;
+//			int user_id;
+//			ss >> user_id;
+//
+//
+//			if (std::find(user_ids.begin(), user_ids.end(), user_id)!=user_ids.end())
+//				human_eye_gaze_.push_back(it->second);
+//
+//
+//		}
+//	}
 }
 
 std::vector<double> ompl_interface::SafeStateValidityChecker::getCollisionObjectsFactors()
@@ -232,6 +293,36 @@ std::vector<double> ompl_interface::SafeStateValidityChecker::getCollisionObject
 	}
 
 	return co_factor;
+}
+
+std::vector<size_t> ompl_interface::SafeStateValidityChecker::getUserIDs()
+{
+	std::vector<size_t> user_ids;
+
+	std::vector<std::string> co_names = safe_collision_world_fcl_->getCollisionObjectNames();
+	for(size_t i=0; i < co_names.size(); ++i)
+	{
+		if (co_names[i].find("head") != std::string::npos)
+		{
+			std::string delimiter = "_";
+
+			size_t pos = 0;
+			while ((pos = co_names[i].find(delimiter)) != std::string::npos) {
+				co_names[i].erase(0, pos + delimiter.length());
+			}
+
+			std::stringstream ss;
+			ss << co_names[i];
+			int user_id;
+			ss >> user_id;
+
+			user_ids.push_back(user_id);
+
+		}
+
+	}
+
+	return user_ids;
 }
 
 bool ompl_interface::SafeStateValidityChecker::isValidSelf(const ompl::base::State *state) const
@@ -1434,7 +1525,38 @@ double ompl_interface::SafeStateValidityChecker::manipulability(const ompl::base
 
 double ompl_interface::SafeStateValidityChecker::humanAwareness(const ompl::base::State *state) const
 {
+	robot_state::RobotState *kstate = tsss_.getStateStorage();
+	planning_context_->getOMPLStateSpace()->copyToRobotState(*kstate, state);
 
+	Eigen::Affine3d end_effector_transform;
+
+	if (planning_context_->getGroupName().compare("right_arm") == 0 )
+		end_effector_transform = kstate->getGlobalLinkTransform("right_gripper");
+	else if (planning_context_->getGroupName().compare("left_arm") == 0 )
+		end_effector_transform = kstate->getGlobalLinkTransform("left_gripper");
+	else
+		return 0; //STa TODO : Add the case when the two arms are moving
+
+	double worst_value = 0;
+
+	for(size_t i=0; i < human_eye_gaze_.size(); ++i)
+	{
+		Eigen::Vector3d hum_to_eef = end_effector_transform.translation() - human_eye_gaze_[i].translation();
+		if(hum_to_eef.norm() < SAFETY_DISTANCE)
+		{
+
+			Eigen::Vector3d hum_direction = human_eye_gaze_[i] * Eigen::Vector3d(1, 0, 0)- human_eye_gaze_[i].translation();
+			double value = Eigen::Quaterniond::FromTwoVectors(hum_to_eef,hum_direction).angularDistance( Eigen::Quaterniond::Identity());
+
+			//The human gaze eye direction (defined as the angular distance) is weighted by the the distance to eef
+//			value /= hum_to_eef.norm();
+
+			if (value > worst_value)
+				worst_value = value;
+		}
+	}
+
+	return worst_value;
 }
 
 

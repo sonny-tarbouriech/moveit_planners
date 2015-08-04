@@ -54,14 +54,20 @@
 #include <ompl/geometric/planners/rrt/RRTstar.h>
 #include <ompl/geometric/planners/prm/PRM.h>
 #include <ompl/geometric/planners/prm/PRMstar.h>
+#include <ompl/geometric/planners/cforest/CForest.h>
+#include <ompl/geometric/planners/bitstar/BITstar.h>
+#include <ompl/geometric/planners/prm/SPARStwo.h>
+#include <ompl/geometric/planners/fmt/FMT.h>
+#include <ompl/geometric/planners/rrt/BiTRRT.h>
 
 //STa
+#include <ompl/geometric/planners/rrt/SafeRRTstarBasic.h>
 #include <ompl/geometric/planners/rrt/SafeRRTstar.h>
 #include <ompl/geometric/planners/rrt/SafeBiRRTstar.h>
 #include <ompl/geometric/planners/rrt/SafeBiTRRT.h>
 #include <ompl/geometric/planners/prm/SafePRM.h>
-#include <ompl/geometric/planners/cforest/CForest.h>
 #include <ompl/geometric/planners/cforest/SafeCForest.h>
+
 
 #include <moveit/ompl_interface/parameterization/joint_space/joint_model_state_space_factory.h>
 #include <moveit/ompl_interface/parameterization/work_space/pose_model_state_space_factory.h>
@@ -162,14 +168,22 @@ void ompl_interface::PlanningContextManager::registerDefaultPlanners()
   registerPlannerAllocator("geometric::RRTstar", boost::bind(&allocatePlanner<og::RRTstar>, _1, _2, _3));
   registerPlannerAllocator("geometric::PRM", boost::bind(&allocatePlanner<og::PRM>, _1, _2, _3));
   registerPlannerAllocator("geometric::PRMstar", boost::bind(&allocatePlanner<og::PRMstar>, _1, _2, _3));
+  registerPlannerAllocator("geometric::CForest", boost::bind(&allocatePlanner<og::CForest>, _1, _2, _3));
+  registerPlannerAllocator("geometric::BITstar", boost::bind(&allocatePlanner<og::BITstar>, _1, _2, _3));
+  registerPlannerAllocator("geometric::SPARStwo", boost::bind(&allocatePlanner<og::SPARStwo>, _1, _2, _3));
+  registerPlannerAllocator("geometric::FMT", boost::bind(&allocatePlanner<og::FMT>, _1, _2, _3));
+  registerPlannerAllocator("geometric::TRRT", boost::bind(&allocatePlanner<og::TRRT>, _1, _2, _3));
+  registerPlannerAllocator("geometric::BiTRRT", boost::bind(&allocatePlanner<og::BiTRRT>, _1, _2, _3));
+
 
   //STa
+  registerPlannerAllocator("geometric::SafeRRTstarBasic", boost::bind(&allocatePlanner<og::SafeRRTstarBasic>, _1, _2, _3));
   registerPlannerAllocator("geometric::SafeRRTstar", boost::bind(&allocatePlanner<og::SafeRRTstar>, _1, _2, _3));
   registerPlannerAllocator("geometric::SafePRM", boost::bind(&allocatePlanner<og::SafePRM>, _1, _2, _3));
-  registerPlannerAllocator("geometric::CForest", boost::bind(&allocatePlanner<og::CForest>, _1, _2, _3));
   registerPlannerAllocator("geometric::SafeCForest", boost::bind(&allocatePlanner<og::SafeCForest>, _1, _2, _3));
   registerPlannerAllocator("geometric::SafeBiTRRT", boost::bind(&allocatePlanner<og::SafeBiTRRT>, _1, _2, _3));
   registerPlannerAllocator("geometric::SafeBiRRTstar", boost::bind(&allocatePlanner<og::SafeBiRRTstar>, _1, _2, _3));
+
 
 
 }

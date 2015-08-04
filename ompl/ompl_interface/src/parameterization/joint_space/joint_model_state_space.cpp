@@ -36,6 +36,7 @@
 
 #include <moveit/ompl_interface/parameterization/joint_space/joint_model_state_space.h>
 
+
 const std::string ompl_interface::JointModelStateSpace::PARAMETERIZATION_TYPE = "JointModel";
 
 ompl_interface::JointModelStateSpace::JointModelStateSpace(const ModelBasedStateSpaceSpecification &spec) :

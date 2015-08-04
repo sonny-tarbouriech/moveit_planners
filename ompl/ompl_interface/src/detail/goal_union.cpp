@@ -86,6 +86,12 @@ void ompl_interface::GoalSampleableRegionMux::sampleGoal(ompl::base::State *st) 
   throw ompl::Exception("There are no states to sample");
 }
 
+//STa
+void ompl_interface::GoalSampleableRegionMux::sampleGoal(ompl::base::State *st, unsigned int samplePosition) const
+{
+	sampleGoal(st);
+}
+
 unsigned int ompl_interface::GoalSampleableRegionMux::maxSampleCount() const
 {
   unsigned int sc = 0;

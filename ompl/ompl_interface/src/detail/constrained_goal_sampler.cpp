@@ -147,6 +147,7 @@ bool ompl_interface::ConstrainedGoalSampler::sampleUsingConstraintSampler(const 
       default_sampler_->sampleUniform(new_goal);
       //STa
       //if (static_cast<const StateValidityChecker*>(si_->getStateValidityChecker().get())->isValid(new_goal, verbose))
+      if (si_->getStateValidityChecker()->isValid(new_goal))
       {
         planning_context_->getOMPLStateSpace()->copyToRobotState(work_state_, new_goal);
         if (kinematic_constraint_set_->decide(work_state_, verbose).satisfied)

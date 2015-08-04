@@ -69,11 +69,10 @@ public:
   virtual void printStatePositions(const ompl::base::State *state, std::ostream &out = std::cout) const;
 
 
-
-
 protected:
 
   std::vector<double> getCollisionObjectsFactors();
+  std::vector<size_t> getUserIDs();
 
   bool isValidApprox(const ompl::base::State *state) const;
 
@@ -124,6 +123,9 @@ protected:
   const collision_detection::SafeCollisionRobotFCL* safe_collision_robot_fcl_unpadded_;
   const collision_detection::SafeCollisionRobotFCL* safe_collision_robot_fcl_padded_;
   const collision_detection::SafeCollisionWorldFCL* safe_collision_world_fcl_;
+
+  std::vector<Eigen::Affine3d> human_eye_gaze_;
+
 
   //STa
   TSStateStorage						tsss1_, tsss2_;
