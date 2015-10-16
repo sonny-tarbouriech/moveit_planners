@@ -127,12 +127,12 @@ ompl_interface::SafeStateValidityChecker::SafeStateValidityChecker(const ModelBa
 		safety_links_name_cc_[0].push_back("right_lower_shoulder");
 		safety_links_name_cc_[0].push_back("right_upper_elbow");
 		safety_links_name_cc_[0].push_back("right_upper_elbow_visual");
-		safety_links_name_cc_[0].push_back("right_lower_elbow");
 
+		safety_links_name_cc_[1].push_back("right_lower_elbow");
 		safety_links_name_cc_[1].push_back("right_upper_forearm");
 		safety_links_name_cc_[1].push_back("right_upper_forearm_visual");
-		safety_links_name_cc_[1].push_back("right_lower_forearm");
 
+		safety_links_name_cc_[2].push_back("right_lower_forearm");
 		safety_links_name_cc_[2].push_back("right_wrist");
 		safety_links_name_cc_[2].push_back("right_hand");
 		safety_links_name_cc_[2].push_back("right_gripper_base");
@@ -162,11 +162,21 @@ ompl_interface::SafeStateValidityChecker::SafeStateValidityChecker(const ModelBa
 	//	L_max_[1] = 0.37429;
 	//	L_max_[2] = 0.229525 + 0.015355; // + camera
 
-	//Collision links
-	//lower_shoulder radius,upper elbow length, upper elbow visual length, lower_elbow radius (twice)
-	L_max_[0] = std::sqrt(std::pow(0.06+0.107+0.273+0.06,2)+std::pow(0.06,2));
-	L_max_[1] = 0.37429;
-	L_max_[2] = 0.2331 + 0.1; // + hand range added + gripper with fingers
+//	//Collision links
+//	//lower_shoulder radius,upper elbow length, upper elbow visual length, lower_elbow radius (twice)
+//	L_max_[0] = std::sqrt(std::pow(0.06+0.107+0.273+0.06,2)+std::pow(0.06,2)); //0.5035
+//	L_max_[1] = 0.37429;
+//	L_max_[2] = 0.2331 + 0.1; // + hand range added + gripper with fingers
+
+//    //Collision links using URDF model of collision + 0.01 margin
+//    L_max_[0] = 0.370895668 + 0.069 + 0.01;
+//    L_max_[1] = 0.37442 + 0.01;
+//    L_max_[2] = 0.343 + 0.01;
+
+    //Collision links where lower_elbow belongs to link 1 instead of 0 and lower_forearm belongs to link 2 instead of 1
+    L_max_[0] = 0.069+0.107+0.273;
+    L_max_[1] = 0.069+0.088+0.272;
+    L_max_[2] = 0.01 + 0.343;
 
 	angle_max_[0] = 0;
 	angle_max_[1] = M_PI/2;
@@ -639,6 +649,34 @@ void ompl_interface::SafeStateValidityChecker::computeInitialDistDataTravelModul
 	{
 		dist_travel[i] = computeTravelDist(ks1, ks2, i, joints_diff, joints_mod);;
 	}
+
+//	//STa temp
+//	std::string homepath = getenv("HOME");
+//	std::ofstream output_file_((homepath + "/computeInitialDistDataTravelModulation.txt").c_str(), std::ios::out | std::ios::app);
+//	if (output_file_)
+//	{
+//	    output_file_ << "state 1 : \n";
+//	    si_->printState(s1, output_file_);
+//	    output_file_ << "state 2 : \n";
+//	    si_->printState(s2, output_file_);
+//	    for (int i=0; i< joints_diff.size(); ++i)
+//	    {
+//	        output_file_ << "joints_diff " << i << " = " << joints_diff[i] <<  "\n";
+//
+//	    }
+//        for (int i=0; i< joints_mod.size(); ++i)
+//        {
+//            output_file_ << "joints_mod " << i << " = " << joints_mod[i] <<  "\n";
+//
+//        }
+//        for (int i=0; i< dist_travel.size(); ++i)
+//        {
+//            output_file_ << "dist_travel " << i << " = " << dist_travel[i] <<  "\n";
+//
+//        }
+//	    output_file_ <<  "\n \n";
+//	    output_file_.close();
+//	}
 }
 
 double ompl_interface::SafeStateValidityChecker::computeDistTravelModulation(const ompl::base::State *s1, const ompl::base::State *s2, size_t link_index)
@@ -654,26 +692,29 @@ double ompl_interface::SafeStateValidityChecker::computeDistTravelModulation(con
 	std::vector<double> joints_mod = computeJointsModulation(ks1, ks2);
 
 
-	//	//STa temp
-	//	double d_temp = computeTravelDist(ks1, ks2, link_index, joints_diff, joints_mod);
-	//	std::string homepath = getenv("HOME");
-	//	std::ofstream output_file_((homepath + "/computeDistTravelModulation.txt").c_str(), std::ios::out | std::ios::app);
-	//	if (output_file_)
-	//	{
-	//		for (int i=0; i< link_index; ++i)
-	//		{
-	//			output_file_
-	//			<< "joints_diff " << 2*i << " = " << joints_diff[2*i] <<  "\n"
-	//			<< "joints_diff " << 2*i+1 << " = " << joints_diff[2*i+1] <<  "\n"
-	//			<< "joints_mod " << i << " = " << joints_mod[i] <<  "\n";
-	//		}
-	//		output_file_
-	//		<< "t1 " << t1 <<  "\n"
-	//		<< "t2 " << t2 <<  "\n"
-	//		<< "TravelDist " << d_temp <<  "\n \n";
-	//		output_file_.close();
-	//	}
-	//	return d_temp;
+//		//STa temp
+//		double d_temp = computeTravelDist(ks1, ks2, link_index, joints_diff, joints_mod);
+//		std::string homepath = getenv("HOME");
+//		std::ofstream output_file_((homepath + "/computeDistTravelModulation.txt").c_str(), std::ios::out | std::ios::app);
+//		if (output_file_)
+//		{
+//		    output_file_ << "link_index = " << link_index << "\n";
+//		    output_file_ << "state 1 : \n";
+//		    si_->printState(s1, output_file_);
+//		    output_file_ << "state 2 : \n";
+//		    si_->printState(s2, output_file_);
+//			for (int i=0; i< link_index; ++i)
+//			{
+//				output_file_
+//				<< "joints_diff " << 2*i << " = " << joints_diff[2*i] <<  "\n"
+//				<< "joints_diff " << 2*i+1 << " = " << joints_diff[2*i+1] <<  "\n"
+//				<< "joints_mod " << i << " = " << joints_mod[i] <<  "\n";
+//			}
+//			output_file_
+//			<< "TravelDist " << d_temp <<  "\n \n";
+//			output_file_.close();
+//		}
+//		return d_temp;
 
 	return computeTravelDist(ks1, ks2, link_index, joints_diff, joints_mod);
 }
@@ -903,7 +944,7 @@ double ompl_interface::SafeStateValidityChecker::computeLinkApproxMinBoxDist(con
 
 			Eigen::Vector3d link_offset = link_offset_STL[i2].translation().transpose() * link_offset_STL[i2].rotation();
 			Eigen::Vector3d link_position = kstate->getGlobalLinkTransform(safety_links_name_cc_[link_index][i]).translation();
-			Eigen::Matrix3d link_rotation = kstate->getGlobalLinkTransform(safety_links_name_cc_[link_index][i]).rotation();
+			Eigen::Matrix3d link_rotation = kstate->getGlobalLinkTransform(safety_links_name_cc_[link_index][i]).rotation()* link_offset_STL[i2].rotation();
 
 			if (link_shape->type == shapes::CYLINDER)
 			{
@@ -989,8 +1030,8 @@ double ompl_interface::SafeStateValidityChecker::computeLinkApproxMinBoxDist(con
 				nb_sample = std::ceil(box_size[0].second / sample_length);
 				double adjusted_sample_length = (box_size[0].second)/(nb_sample);
 				Eigen::Vector3d box_offset, sample_step;
-				box_offset << ((box->size[0] == box_size[0].first) ? box_size[0].second/2 : 0), ((box->size[1] == box_size[0].first) ? box_size[0].second/2 : 0), ((box->size[2] == box_size[0].first) ? box_size[0].second/2 : 0);
-				sample_step << ((box->size[0] == box_size[0].first) ? adjusted_sample_length : 0), ((box->size[1] == box_size[0].first) ? adjusted_sample_length : 0), ((box->size[2] == box_size[0].first) ? adjusted_sample_length : 0);
+				box_offset << ((box_size[0].first == 0) ? box_size[0].second/2 : 0), ((box_size[0].first == 1) ? box_size[0].second/2 : 0), ((box_size[0].first == 2) ? box_size[0].second/2 : 0);
+				sample_step << ((box_size[0].first == 0) ? adjusted_sample_length : 0), ((box_size[0].first == 1) ? adjusted_sample_length : 0), ((box_size[0].first == 2) ? adjusted_sample_length : 0);
 
 				double sample_radius;
 				if (box->size[0] == box_size[0].second)
@@ -1252,22 +1293,23 @@ double ompl_interface::SafeStateValidityChecker::computeLinkMinObstacleDist(cons
 	robot_state::RobotState *kstate = tsss_.getStateStorage();
 	planning_context_->getOMPLStateSpace()->copyToRobotState(*kstate, state);
 
-	//	//STa test
-	//	std::string homepath = getenv("HOME");
-	//	std::ofstream output_file((homepath + "/min_obs_dist_time.txt").c_str(), std::ios::out | std::ios::app);
-	//	std::ofstream output_file_2((homepath + "/min_obs_dist_result.txt").c_str(), std::ios::out | std::ios::app);
-	//	ompl::time::point init = ompl::time::now();
-	//	double approx = computeLinkApproxMinObstacleDist(kstate, link_index, object_index);
-	//	if (approx < 0)
-	//		approx = 0;
-	//	ompl::time::duration dur1 = ompl::time::now() - init;
-	//	double exact = computeLinkExactMinObstacleDist(kstate, link_index, object_index);
-	//	if (exact < 0)
-	//		exact = 0;
-	//	ompl::time::duration dur2 = ompl::time::now() - init - dur1;
-	//	output_file << ompl::time::seconds(dur1) << "  " << ompl::time::seconds(dur2) << "\n";
-	//	output_file_2 << approx << "  " << exact << "\n";
-	//	return approx;
+//		//STa test
+//		std::string homepath = getenv("HOME");
+////		std::ofstream output_file((homepath + "/min_obs_dist_time.txt").c_str(), std::ios::out | std::ios::app);
+//		std::ofstream output_file_2((homepath + "/min_obs_dist_result.txt").c_str(), std::ios::out | std::ios::app);
+////		ompl::time::point init = ompl::time::now();
+//		double approx = computeLinkApproxMinObstacleDist(kstate, link_index, object_index);
+//		if (approx < 0)
+//			approx = 0;
+////		ompl::time::duration dur1 = ompl::time::now() - init;
+//		double exact = computeLinkExactMinObstacleDist(kstate, link_index, object_index);
+//		if (exact < 0)
+//			exact = 0;
+////		ompl::time::duration dur2 = ompl::time::now() - init - dur1;
+////		output_file << ompl::time::seconds(dur1) << "  " << ompl::time::seconds(dur2) << "\n";
+//		if (approx > exact + 0.0001)
+//		    output_file_2 << approx << "  " << exact << "  " << link_index << "\n";
+//		return approx;
 
 
 
@@ -1359,6 +1401,29 @@ double ompl_interface::SafeStateValidityChecker::computeJointsModulation(const r
 			center += M_PI;
 	}
 
+//    //STa temp
+//    std::string homepath = getenv("HOME");
+//    std::ofstream output_file_((homepath + "/computeJointsModulation.txt").c_str(), std::ios::out | std::ios::app);
+//    double result;
+//    if ( (center + dist/2 >=0  && center - dist/2 <= 0) || (center + dist/2 >= M_PI  && center - dist/2 <= M_PI ))
+//        result= 1;
+//    else if (center > M_PI/2)
+//        result= cos(M_PI - (center + dist/2));
+//    else
+//        result= cos((center - dist/2));
+//    if (output_file_)
+//    {
+//        output_file_
+//        << "angle_max_ = " << angle_max_[link_index] <<  "\n"
+//        << "ang_min = " << ang_min <<  "\n"
+//        << "ang_max = " << ang_max <<  "\n"
+//        << "dist = " << dist <<  "\n"
+//        << "center = " << center <<  "\n"
+//        << "joints_modulation = " << result <<  "\n \n";
+//        output_file_.close();
+//    }
+//    return result;
+
 	if ( (center + dist/2 >=0  && center - dist/2 <= 0) || (center + dist/2 >= M_PI  && center - dist/2 <= M_PI ))
 		return 1;
 	else if (center > M_PI/2)
@@ -1366,20 +1431,7 @@ double ompl_interface::SafeStateValidityChecker::computeJointsModulation(const r
 	else
 		return cos((center - dist/2));
 
-	//		//STa temp
-	//		std::string homepath = getenv("HOME");
-	//		std::ofstream output_file_((homepath + "/computeJointsModulation.txt").c_str(), std::ios::out | std::ios::app);
-	//		if (output_file_)
-	//		{
-	//			output_file_
-	//			<< "ang_min" << ang_min <<  "\n"
-	//			<< "ang_max" << ang_max <<  "\n"
-	//			<< "dist" << dist <<  "\n"
-	//			<< "center" << center <<  "\n"
-	//			<< "angle_max_" << angle_max_[i] <<  "\n"
-	//			<< "joints_modulation" << joints_modulation[i] <<  "\n \n";
-	//			output_file_.close();
-	//		}
+
 
 }
 
@@ -1387,7 +1439,7 @@ double ompl_interface::SafeStateValidityChecker::computeJointsModulation(const r
 double ompl_interface::SafeStateValidityChecker::computeTravelDist(const robot_state::RobotState *ks1, const robot_state::RobotState *ks2, size_t link_index, std::vector<double> joints_diff, std::vector<double> joints_modulation) const
 {
 	double travel_dist = 0;
-	double lenght = 0;
+	std::vector<double> L_max = L_max_;
 
 	//	//STa temp
 	//	double travel_dist_2 = 0;
@@ -1400,12 +1452,30 @@ double ompl_interface::SafeStateValidityChecker::computeTravelDist(const robot_s
 	//		travel_dist += lenght * (joints_diff[i*2]*joints_modulation[i] + joints_diff[i*2+1] );
 	//	}
 
-	//Interpolation method
-	for (int i = link_index; i >= 0; i--)
-	{
-		lenght += L_max_[i];
-		travel_dist += lenght * (std::sqrt(std::pow(joints_diff[i*2]*joints_modulation[i],2) + std::pow(joints_diff[i*2+1],2)));
-	}
+//	if (link_index < 2)
+//	    lenght += 0.0781; //We consider the farthest point of the link -> we add the distance between the center of the cylinder and the farthest point in it.
+
+	if (link_index < 2)
+	    L_max[link_index] = std::sqrt(std::pow(L_max[link_index],2)+std::pow(0.06,2));
+
+//	//Interpolation method
+//	for (int i = link_index; i >= 0; i--)
+//	{
+//		travel_dist += lenght * (std::sqrt(std::pow(joints_diff[i*2]*joints_modulation[i],2) + std::pow(joints_diff[i*2+1],2)));
+//		if (i > 0)
+//		    lenght += L_max_[i-1];
+//	}
+
+	//Try
+    for (int i = 0; i <= link_index; i++)
+    {
+        travel_dist += L_max[i]* (std::sqrt(std::pow(joints_diff[i*2]*joints_modulation[i],2) + std::pow(joints_diff[i*2+1],2)));
+
+        for (int j=i+1; j <= link_index; ++j)
+        {
+            travel_dist += L_max[j]* (std::sqrt(std::pow(joints_diff[i*2],2) + std::pow(joints_diff[i*2+1],2)));
+        }
+    }
 
 
 	//STa test temp
@@ -1426,6 +1496,9 @@ double ompl_interface::SafeStateValidityChecker::computeTravelDist(const robot_s
 {
 	double travel_dist = 0;
 	double lenght = 0;
+
+	if (link_index < 2)
+	        lenght += 0.0781; //We consider the farthest point of the link -> we add the distance between the center of the cylinder and the farthest point in it.
 
 	//Interpolation method
 	for (int i = link_index; i >= 0; i--)
