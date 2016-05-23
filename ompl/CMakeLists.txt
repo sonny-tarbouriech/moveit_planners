@@ -7,7 +7,7 @@ endif()
 
 find_package(Boost REQUIRED system filesystem date_time thread serialization)
 find_package(catkin REQUIRED COMPONENTS
-  moveit_core 
+  moveit_core
   moveit_ros_planning
   roscpp
   rosconsole
@@ -36,8 +36,8 @@ include_directories(SYSTEM
                     ${Boost_INCLUDE_DIRS})
 
 include_directories(ompl_interface/include
-                    ${OMPL_INCLUDE_DIRS}
-                    ${catkin_INCLUDE_DIRS})
+                    ${catkin_INCLUDE_DIRS}
+                    ${OMPL_INCLUDE_DIRS})
 
 link_directories(${OMPL_LIBRARY_DIRS})
 link_directories(${catkin_LIBRARY_DIRS})
