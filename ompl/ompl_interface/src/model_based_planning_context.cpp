@@ -54,9 +54,6 @@
 //STa
 #include <moveit/ompl_interface/detail/safe_state_validity_checker.h>
 
-//STa temp
-#include <fstream>
-
 ompl_interface::ModelBasedPlanningContext::ModelBasedPlanningContext(const std::string &name, const ModelBasedPlanningContextSpecification &spec) :
 planning_interface::PlanningContext(name, spec.state_space_->getJointModelGroup()->getName()),
 spec_(spec),
@@ -600,16 +597,6 @@ bool ompl_interface::ModelBasedPlanningContext::solve(double timeout, unsigned i
 			unregisterTerminationCondition();
 		}
 	}
-
-	//STa test
-	if (ompl_simple_setup_->getProblemDefinition()->hasSolution())
-	{
-		std::string homepath = getenv("HOME");
-		std::ofstream output_file((homepath + "/mbpc.txt").c_str(), std::ios::out | std::ios::app);
-		output_file << ompl_simple_setup_->getProblemDefinition()->getSolutions()[0].safetyCost_ << "\n";
-		output_file.close();
-	}
-
 	postSolve();
 
 	return result;

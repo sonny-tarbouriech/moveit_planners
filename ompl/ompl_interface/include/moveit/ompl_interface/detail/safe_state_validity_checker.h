@@ -25,15 +25,22 @@ class SafeStateValidityChecker : public ompl::base::SafeStateValidityChecker
 {
 public:
 
-	struct Hypersphere
+
+	struct FCLObject
 	{
-		Hypersphere(std::vector<std::string> joint_name) : joint_name_(joint_name)
+		FCLObject(): obj_names_(""), obj_danger_factor_(1)
+		{}
+
+		FCLObject(boost::shared_ptr<fcl::CollisionObject> fcl_collision_obj, std::string obj_names, double obj_danger_factor):
+			fcl_collision_obj_(fcl_collision_obj),
+			obj_names_(obj_names),
+			obj_danger_factor_(obj_danger_factor)
 		{
 		}
 
-		std::vector<std::string> joint_name_;
-		std::vector<double> center_;
-		std::vector<double> radius_;
+		boost::shared_ptr<fcl::CollisionObject> fcl_collision_obj_;
+		std::string obj_names_;
+		double obj_danger_factor_;
 	};
 
 	SafeStateValidityChecker(const ModelBasedPlanningContext *planning_context);
@@ -62,34 +69,46 @@ public:
   virtual void getJointLimits(std::vector<double>& q_min, std::vector<double>& q_max) const;
 
   virtual double manipulability(const ompl::base::State *state) const;
-  virtual double manipulability(const ompl::base::State* s1, const ompl::base::State* s2);
-
   virtual double humanAwareness(const ompl::base::State *state) const;
 
   virtual void printStatePositions(const ompl::base::State *state, std::ostream &out = std::cout) const;
 
+  virtual bool humanPresence() const
+  {
+	  return human_eye_gaze_.size() > 0;
+  }
+  virtual size_t getNbSafetyLinks() const
+  {
+	  return NB_SAFETY_LINKS;
+  }
+  virtual size_t getNbObjects() const
+  {
+	  return fcl_obj_.size();
+  }
+  virtual double getObjectDangerFactor(size_t index) const
+  {
+	  return fcl_obj_[index].obj_danger_factor_;
+  }
 
 protected:
 
-  std::vector<double> getCollisionObjectsFactors();
-  std::vector<size_t> getUserIDs();
+  std::vector<double> getCollisionObjectsFactors(std::vector<std::string> co_names);
+  std::vector<size_t> getUserIDs(std::vector<std::string> co_names);
+
+  void generateBoxesFromOctomap(std::vector<fcl::CollisionObject*>& boxes, const fcl::OcTree* tree) const;
+  double generateBoxesFromOctomapRecurse(std::vector<std::pair<fcl::Box*, fcl::Transform3f> >& boxes, const fcl::OcTree* tree, const fcl::OcTree::OcTreeNode* node, const fcl::AABB& node_bv, double precision, bool& is_occupied_inside_ws) const;
+
+  double getOctomapOccupancyVolume(const fcl::OcTree* tree);
 
   bool isValidApprox(const ompl::base::State *state) const;
-
-  double computeMinDistFromSphere(robot_state::RobotState *kstate, Hypersphere sphere) const;
-  double computeMinDistFromSphere(robot_state::RobotState *ks1, robot_state::RobotState *ks2, Hypersphere sphere) const;
 
   double computeRobotMinObstacleDistIndividualLinks(const robot_state::RobotState *kstate, bool fast_dist, double& object_danger_factor) const;
   double computeRobotExactMinObstacleDist(const robot_state::RobotState *kstate) const;
 
-  double computeLinkMinObstacleDist(const robot_state::RobotState *kstate, int link_index, bool fast_dist) const;
+  double computeLinkMinObstacleDist(const robot_state::RobotState *kstate, int link_index, bool fast_dist, double& object_danger_factor) const;
   double computeLinkApproxMinObstacleDist(const robot_state::RobotState *kstate, int link_index, int object_index) const;
   double computeLinkExactMinObstacleDist(const robot_state::RobotState *kstate, int link_index, int object_index) const;
-
-  double computeLinkApproxMinBoxDist(const robot_state::RobotState *kstate, int link_index, int object_index) const;
-  double computeLinkApproxMinSphereDist(const robot_state::RobotState *kstate, int link_index, int object_index) const;
-  double computeLinkApproxMinCylinderDist(const robot_state::RobotState *kstate, int link_index, int object_index) const;
-
+  double computeLinkApproxMinBoxDist(const robot_state::RobotState *kstate, int link_index, fcl::CollisionObject* object, float min_dist ) const;
 
   double computeTravelDist(const robot_state::RobotState *ks1, const robot_state::RobotState *ks2, size_t link_index, std::vector<double> joints_diff, std::vector<double> joints_modulation) const;
   double computeTravelDist(const robot_state::RobotState *ks1, const robot_state::RobotState *ks2, size_t link_index, std::vector<double> joints_diff) const;
@@ -99,26 +118,27 @@ protected:
   double computeJointsModulation(const robot_state::RobotState *ks1, const robot_state::RobotState *ks2, size_t link_index) const;
 
 
+  std::vector<FCLObject> fcl_obj_;
 
   const ModelBasedPlanningContext      *planning_context_;
   std::string                           group_name_;
+
   TSStateStorage						tsss_;
+  //STa
+  TSStateStorage						tsss1_, tsss2_;
+
   collision_detection::CollisionRequest collision_request_simple_;
   collision_detection::CollisionRequest collision_request_with_distance_;
-  collision_detection::CollisionRequest collision_request_with_contacts_;
 
-  std::vector<fcl::CollisionObject*> fcl_collision_obj_;
+
   std::vector<const moveit::core::JointModel*> active_joints_;
-  std::vector< std::string> safety_links_name_;
+
 
   std::vector< std::string> safety_links_name_with_collision_;
   std::vector<std::vector< std::string > > safety_links_name_cc_;
-  std::vector<std::string> specific_collision_links_;
 
   std::vector<double> L_max_;
   std::vector<double> angle_max_;
-
-  std::vector<Hypersphere> hypersphere_;
 
   const collision_detection::SafeCollisionRobotFCL* safe_collision_robot_fcl_unpadded_;
   const collision_detection::SafeCollisionRobotFCL* safe_collision_robot_fcl_padded_;
@@ -126,9 +146,10 @@ protected:
 
   std::vector<Eigen::Affine3d> human_eye_gaze_;
 
+  std::vector<boost::shared_ptr<fcl::CollisionObject> > ocTree_boxes_;
 
-  //STa
-  TSStateStorage						tsss1_, tsss2_;
+
+
 };
 
 }
